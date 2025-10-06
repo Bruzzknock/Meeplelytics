@@ -9,3 +9,9 @@ if not %EXITCODE%==0 (
     pause >nul
     exit /b %EXITCODE%
 )
+
+echo.
+echo Meeplelytics API server has stopped.
+echo Press any key to close this window.
+pause >nul
+exit /b 0
