@@ -1,0 +1,19 @@
+{
+  "name": "meeplelytics",
+  "private": true,
+  "workspaces": [
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "dev": "node scripts/dev.js",
+    "dev:server": "npm --workspace server run dev",
+    "dev:web": "npm --workspace web run dev",
+    "migrate": "npm --workspace server run migrate",
+    "seed": "npm --workspace server run seed",
+    "test": "node scripts/test.js",
+    "test:server": "npm --workspace server run test",
+    "test:web": "npm --workspace web run test"
+  },
+  "devDependencies": {}
+}

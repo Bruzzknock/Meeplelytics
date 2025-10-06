@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum TournamentStatus {
+  draft
+  running
+  complete
+}
+
+enum ImportStatus {
+  pending
+  done
+  error
+}
+
+model Team {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  color     String?
+  createdAt DateTime  @default(now())
+  players   Player[]
+}
+
+model Player {
+  id               Int             @id @default(autoincrement())
+  name             String
+  handle           String          @unique
+  teamId           Int?
+  team             Team?           @relation(fields: [teamId], references: [id])
+  rating           Int             @default(1500)
+  deviation        Float?
+  createdAt        DateTime        @default(now())
+  tableSeats       TableSeat[]
+  results          Result[]
+  ratingChanges    RatingChange[]
+  tournaments      TournamentParticipant[]
+}
+
+model Game {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  rulesetJson Json      @default(json("{}"))
+  createdAt   DateTime  @default(now())
+  tournaments Tournament[]
+  importJobs  ImportJob[]
+}
+
+model Tournament {
+  id           Int                      @id @default(autoincrement())
+  name         String
+  status       TournamentStatus         @default(draft)
+  gameId       Int
+  game         Game                     @relation(fields: [gameId], references: [id])
+  createdAt    DateTime                 @default(now())
+  rounds       Round[]
+  participants TournamentParticipant[]
+}
+
+model TournamentParticipant {
+  id           Int        @id @default(autoincrement())
+  tournamentId Int
+  playerId     Int
+  createdAt    DateTime   @default(now())
+
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+  player       Player     @relation(fields: [playerId], references: [id])
+
+  @@unique([tournamentId, playerId])
+}
+
+model Round {
+  id           Int       @id @default(autoincrement())
+  tournamentId Int
+  index        Int
+  locked       Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+  tables       Table[]
+
+  @@unique([tournamentId, index])
+}
+
+model Table {
+  id         Int        @id @default(autoincrement())
+  roundId    Int
+  tableIndex Int
+  createdAt  DateTime   @default(now())
+
+  round      Round      @relation(fields: [roundId], references: [id])
+  seats      TableSeat[]
+  results    Result[]
+
+  @@unique([roundId, tableIndex])
+}
+
+model TableSeat {
+  id         Int      @id @default(autoincrement())
+  tableId    Int
+  playerId   Int
+  seatNumber Int
+
+  table      Table    @relation(fields: [tableId], references: [id])
+  player     Player   @relation(fields: [playerId], references: [id])
+
+  @@unique([tableId, playerId])
+  @@unique([tableId, seatNumber])
+}
+
+model Result {
+  id             Int      @id @default(autoincrement())
+  tableId        Int
+  playerId       Int
+  placement      Int
+  rawScore       Float?
+  bonus          Float    @default(0)
+  pointsAwarded  Float
+  createdAt      DateTime @default(now())
+
+  table          Table    @relation(fields: [tableId], references: [id])
+  player         Player   @relation(fields: [playerId], references: [id])
+
+  @@unique([tableId, playerId])
+}
+
+model RatingChange {
+  id        Int      @id @default(autoincrement())
+  playerId  Int
+  before    Int
+  after     Int
+  delta     Int
+  tableId   Int
+  createdAt DateTime @default(now())
+
+  player    Player   @relation(fields: [playerId], references: [id])
+  table     Table    @relation(fields: [tableId], references: [id])
+}
+
+model ImportJob {
+  id             Int          @id @default(autoincrement())
+  gameId         Int
+  sourceFileName String
+  mappingJson    Json
+  status         ImportStatus @default(pending)
+  summaryText    String?
+  createdAt      DateTime     @default(now())
+
+  game           Game         @relation(fields: [gameId], references: [id])
+}
